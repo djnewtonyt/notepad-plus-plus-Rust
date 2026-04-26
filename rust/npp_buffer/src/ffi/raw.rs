@@ -206,9 +206,8 @@ pub unsafe extern "C" fn npp_file_manager_create_buffer(
         Err(_) => return 0,
     };
 
-    let file_status = match status {
-        0x01 => DocFileStatus::Regular,
-        0x02 => DocFileStatus::Unnamed,
+    let file_status = match DocFileStatus::from_u32(status) {
+        Some(s @ (DocFileStatus::Regular | DocFileStatus::Unnamed)) => s,
         _ => return 0,
     };
 

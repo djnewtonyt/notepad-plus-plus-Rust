@@ -140,6 +140,22 @@ impl Default for DocFileStatus {
     }
 }
 
+impl DocFileStatus {
+    /// Construct a `DocFileStatus` from its raw discriminant value.
+    /// Returns `None` for unrecognised values.
+    pub fn from_u32(v: u32) -> Option<DocFileStatus> {
+        match v {
+            0x01 => Some(DocFileStatus::Regular),
+            0x02 => Some(DocFileStatus::Unnamed),
+            0x04 => Some(DocFileStatus::Deleted),
+            0x08 => Some(DocFileStatus::Modified),
+            0x10 => Some(DocFileStatus::NeedReload),
+            0x20 => Some(DocFileStatus::Inaccessible),
+            _ => None,
+        }
+    }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // BufferChangeFlags
 // ─────────────────────────────────────────────────────────────────────────────

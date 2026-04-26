@@ -202,10 +202,16 @@ pub fn utf16_to_utf8(input: &[u8], is_big_endian: bool) -> Option<Vec<u8>> {
         return None;
     }
 
-    let mut out = Vec::with_capacity(input.len());  // UTF-8 is at most 1.5× UTF-16
+    // Conservative capacity: each UTF-16 code unit (2 bytes) can produce up to
+    // 3 UTF-8 bytes for BMP characters; supplementary characters use 4 bytes in
+    // both encodings.  Allocating `input.len() * 2` avoids under-allocation in
+    // the worst case while still being a single allocation in the common case.
+    let mut out = Vec::with_capacity(input.len() * 2);
     let mut i = 0;
 
-    while i + 1 < input.len() {
+    // The even-length check above guarantees there is always a full code unit
+    // at index i when i < input.len().
+    while i < input.len() {
         let lo = input[i];
         let hi = input[i + 1];
         let unit = if is_big_endian {
@@ -216,8 +222,8 @@ pub fn utf16_to_utf8(input: &[u8], is_big_endian: bool) -> Option<Vec<u8>> {
         i += 2;
 
         if (0xD800..=0xDBFF).contains(&unit) {
-            // High surrogate: must be followed by a low surrogate.
-            if i + 1 >= input.len() {
+            // High surrogate: must be followed by a low surrogate (2 more bytes).
+            if i + 2 > input.len() {
                 return None; // truncated surrogate pair
             }
             let lo2 = input[i];
