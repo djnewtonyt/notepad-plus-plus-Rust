@@ -400,6 +400,49 @@ ADD_DEFINITIONS(${defs})
 
 INCLUDE_DIRECTORIES(${projIncludDir})
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Rust / npp_buffer integration
+# ─────────────────────────────────────────────────────────────────────────────
+# Build the Rust crate with Cargo and link the resulting static library into
+# the Notepad++ executable.
+#
+# The Cargo build step runs during the CMake build phase; the artefact path
+# depends on whether we are building Debug or Release.
+#
+# Requirements:
+#   • `cargo` must be on PATH (install from https://rustup.rs).
+#   • For the full hybrid build with the cxx bridge, add
+#     `--features cxx-bridge` to the CARGO_FLAGS below.
+#
+# Layout:
+#   rust/npp_buffer/  – Cargo workspace member
+#   rust/npp_buffer/target/{debug,release}/libnpp_buffer.a  – output artefact
+
+set(RUST_MANIFEST_DIR "${CMAKE_SOURCE_DIR}/../../rust/npp_buffer")
+set(CARGO_FLAGS "")  # Add --features cxx-bridge here for the full hybrid build
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(CARGO_BUILD_TYPE_FLAG "--release")
+    set(CARGO_TARGET_SUBDIR "release")
+else()
+    set(CARGO_BUILD_TYPE_FLAG "")
+    set(CARGO_TARGET_SUBDIR "debug")
+endif()
+
+add_custom_target(npp_buffer_rust ALL
+    COMMAND cargo build ${CARGO_BUILD_TYPE_FLAG} ${CARGO_FLAGS}
+    WORKING_DIRECTORY "${RUST_MANIFEST_DIR}"
+    COMMENT "Building Rust npp_buffer crate"
+    VERBATIM
+)
+
+set(NPP_BUFFER_RUST_LIB
+    "${RUST_MANIFEST_DIR}/target/${CARGO_TARGET_SUBDIR}/libnpp_buffer.a"
+)
+
+# npp_buffer_rust must be built before the Notepad++ executable.
+add_dependencies(notepad++ npp_buffer_rust)
+
 find_library(SCINTILLA_STATIC_LIBRARY
 	NAMES libscintilla
 	HINTS "../../scintilla/bin"
@@ -424,5 +467,5 @@ endif()
 ADD_EXECUTABLE(notepad++ ${option} ${src_files} ${include_files} ${rcFiles})
 
 
-TARGET_LINK_LIBRARIES (notepad++ ${SCINTILLA_STATIC_LIBRARY} ${LEXILLA_STATIC_LIBRARY} ${win32_LIBRARIES})
+TARGET_LINK_LIBRARIES (notepad++ ${SCINTILLA_STATIC_LIBRARY} ${LEXILLA_STATIC_LIBRARY} ${win32_LIBRARIES} ${NPP_BUFFER_RUST_LIB})
 

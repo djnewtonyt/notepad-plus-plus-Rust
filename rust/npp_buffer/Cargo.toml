@@ -1,0 +1,39 @@
+[package]
+name        = "npp_buffer"
+version     = "0.1.0"
+edition     = "2021"
+description = "Rust rewrite of the Notepad++ core editor-buffer subsystem – migration step 1"
+license     = "GPL-3.0-or-later"
+
+# staticlib  → consumed by the CMake C++ hybrid build (linked as a .lib/.a)
+# rlib       → consumed by other Rust crates in the workspace
+[lib]
+crate-type = ["staticlib", "rlib"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Features
+# ─────────────────────────────────────────────────────────────────────────────
+[features]
+default = []
+
+# Enable the type-safe cxx C++/Rust bridge.  Required for the hybrid Windows
+# build.  Guarded behind a feature flag so the crate can be built and tested
+# on any host (including Linux CI) without a C++ compiler in the path.
+cxx-bridge = ["dep:cxx", "dep:cxx-build"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Runtime dependencies
+# ─────────────────────────────────────────────────────────────────────────────
+[dependencies]
+# cxx generates the glue code that lets C++ call into Rust (and vice-versa)
+# with full type safety.  Optional: only pulled in when `cxx-bridge` feature
+# is active.
+cxx = { version = "1", optional = true }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Build-time dependencies
+# ─────────────────────────────────────────────────────────────────────────────
+[build-dependencies]
+# cxx-build compiles the C++ side of the bridge shim during `cargo build`.
+# Only required for the hybrid build.
+cxx-build = { version = "1", optional = true }

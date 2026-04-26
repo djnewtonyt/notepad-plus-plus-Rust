@@ -1,0 +1,3 @@
+[workspace]
+members  = ["npp_buffer"]
+resolver = "2"
